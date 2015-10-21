@@ -1,0 +1,173 @@
+<link rel="import" href="../../bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="../../bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animated-pages.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation.html">
+<link rel="import" href="../../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+
+<dom-module id="contacts-app">
+    <style>
+        :host{
+            background: lightgrey;
+        }
+        h1{
+            width: 100%;
+            background: black;
+            color: white;
+            margin-top: 0px;
+
+        }
+        paper-card{
+            width: 300px;
+            height: 300px;
+            margin:10px;
+             --paper-card-header-color: white;
+        }
+        #list{
+            margin: 0 auto;
+            width: 90%;
+        }
+        paper-fab{
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+        }
+        #pages{
+            height: 100%;
+        }
+        .new{
+            background: white;
+        }
+    </style>
+    <template>
+
+        <neon-animated-pages id="pages" selected="{{selected}}">
+            <paper-header-panel>
+                <paper-toolbar>
+                  <span class="title">Contacts app</span>
+                </paper-toolbar>
+                <div id="list">
+                    <template is="dom-repeat" id="contactlist" items="{{contacts}}">
+                        <paper-card on-click="openDetail"
+                            heading="{{item.nombre}}"
+                            image="{{item.imagen}}">
+                        </paper-card>
+                    </template>
+                    <paper-toast text="Contacto añadido!" id="toast"></paper-toast>
+                    <paper-fab icon="create" on-click="create"></paper-fab>
+                </div>
+            </paper-header-panel>
+
+            <paper-header-panel>
+                <div id="detail">
+                    <paper-toolbar>
+                        <paper-icon-button icon="arrow-back" on-click="goToHome"></paper-icon-button>
+                        <span class="title">{{contact.nombre}}</span>
+                    </paper-toolbar>
+                    <iron-image style="width:100%; height:400px;" sizing="cover" src="{{contact.imagen}}"></iron-image>
+                </div>
+            </paper-header-panel>
+
+            <paper-header-panel class="new">
+                <paper-toolbar>
+                    <paper-icon-button icon="arrow-back" on-click="goToHome"></paper-icon-button>
+                    <span class="title">Nuevo contacto</span>
+                </paper-toolbar>
+                <div class="content">
+                    <paper-input label="Nombre" id="nombre"></paper-input>
+                    <paper-input label="Apellido 1" id="apellido1"></paper-input>
+                    <paper-input label="Apellido 2" id="apellido2"></paper-input>
+                    <paper-input label="Telefono" id="telefono"></paper-input>
+                    <paper-input type="email" label="email" id="email"></paper-input>
+                    <paper-fab icon="save" on-click="save"></paper-fab>
+                </div>
+            </paper-header-panel>
+
+        </neon-animated-pages>
+
+
+        <iron-ajax id="getAllContacts"
+            auto
+            url="http://todotelegram.com/pbd/servidor/contact"
+            handle-as="json"
+            on-response="allContactsResponse"></iron-ajax>
+
+        <iron-ajax id="getContact"
+            handle-as="json"
+            on-response="getContactResponse"></iron-ajax>
+
+        <iron-ajax id="addContact"
+            method="POST"
+            handle-as="json"
+            url="http://todotelegram.com/pbd/servidor/contact"
+            on-response="addContactResponse"></iron-ajax>
+    </template>
+</dom-module>
+<script>
+    Polymer({
+        is: "contacts-app",
+        properties: {
+            contacts: {
+                type: Array
+            }
+        },
+        ready: function(){
+            this.$.pages.selected = 0;
+        },
+        allContactsResponse: function(event){
+            this.contacts = event.detail.response;
+        },
+        selectedChanged: function(newValue, oldValue){
+            console.log(newValue);
+        },
+        openDetail: function(e){
+            var contact = this.$.contactlist.itemForElement(e.target);
+            this.$.getContact.url = "http://todotelegram.com/pbd/servidor/contact/" + contact.id;
+            console.log(this.$.getContact.url);
+            this.$.getContact.generateRequest();
+        },
+        goToHome: function(){
+            this.$.pages.selected = 0;
+        },
+        getContactResponse: function(event){
+            console.log(event.detail.response);
+            this.contact = event.detail.response;
+            this.$.pages.selected = 1;
+        },
+        create: function(){
+            this.$.pages.selected = 2;
+        },
+        save: function(){
+            var nombre = this.$.nombre.value;
+            var apellido1 = this.$.apellido1.value;
+            var apellido2 = this.$.apellido2.value;
+            var email = this.$.email.value;
+            var telefono = this.$.telefono.value;
+
+            var contact = {
+                "nombre":nombre,
+                "apellido1":apellido1,
+                "apellido2":apellido2,
+                "email":email,
+                "telefono":telefono,
+                "imagen":"http://unsplash.it/1000/1000?image=" + this.contacts.length
+            };
+            console.log(contact);
+            this.$.addContact.body = JSON.stringify(contact);
+            this.$.addContact.generateRequest();
+        },
+        addContactResponse: function(event){
+            console.log(event.detail.response);
+            this.$.getAllContacts.generateRequest();
+            this.$.pages.selected = 0;
+            this.$.toast.toggle();
+        }
+
+    });
+</script>
